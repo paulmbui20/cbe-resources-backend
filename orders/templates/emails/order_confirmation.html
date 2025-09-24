@@ -1,0 +1,88 @@
+<!-- templates/emails/order_confirmation.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation - {{ order.order_number }}</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: #10b981; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">Order Confirmed!</h1>
+        <p style="color: white; margin: 10px 0 0 0;">Order #{{ order.order_number }}</p>
+    </div>
+
+    <div style="background: white; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
+        <h2 style="color: #333; margin-top: 0;">Thank you for your purchase!</h2>
+
+        <p>Your order has been processed successfully. You can now download your educational materials using the links below.</p>
+
+        <!-- Order Details -->
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #333; margin-top: 0;">Order Details</h3>
+            <table style="width: 100%; font-size: 14px;">
+                <tr>
+                    <td><strong>Order Number:</strong></td>
+                    <td>{{ order.order_number }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Order Date:</strong></td>
+                    <td>{{ order.created_at|date:"F d, Y" }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Total Amount:</strong></td>
+                    <td>{% if order.total_amount == 0 %}Free{% else %}KSh {{ order.total_amount }}{% endif %}</td>
+                </tr>
+                <tr>
+                    <td><strong>Payment Method:</strong></td>
+                    <td>{{ order.payment_method|capfirst }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Download Links -->
+        <div style="margin: 30px 0;">
+            <h3 style="color: #333;">Your Downloads</h3>
+            {% for item in order.items.all %}
+            <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; margin: 10px 0;">
+                <h4 style="margin: 0 0 5px 0; color: #4f46e5;">{{ item.product.title }}</h4>
+                <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">{{ item.product.get_product_type_display }} - {{ item.product.grade.display_name }}</p>
+
+                {% if item.can_download %}
+                    <a href="{{ site_url }}{{ item.get_download_url }}" style="background: #4f46e5; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px; display: inline-block;">Download Now</a>
+                {% else %}
+                    <span style="color: #ef4444; font-size: 14px;">Download link expired</span>
+                {% endif %}
+
+                <p style="margin: 10px 0 0 0; font-size: 12px; color: #888;">
+                    Downloads remaining: {{ item.download_limit|subtract:item.download_count }} |
+                    Expires: {{ item.download_expires_at|date:"M d, Y" }}
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Important Notice -->
+        <div style="background: #dbeafe; border: 1px solid #3b82f6; padding: 15px; border-radius: 6px; margin: 20px 0;">
+            <h4 style="color: #1e40af; margin-top: 0;">Important Information</h4>
+            <ul style="margin: 0; padding-left: 20px; color: #1e40af; font-size: 14px;">
+                <li>Download links are valid for 30 days</li>
+                <li>You can download each item up to 5 times</li>
+                <li>Save your downloads locally</li>
+                <li>Contact support if you have any issues</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ site_url }}/products/" style="background: #059669; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Browse More Materials</a>
+        </div>
+
+        <p style="margin-bottom: 0;">Thank you for choosing CBC Marketplace!<br>The CBC Marketplace Team</p>
+    </div>
+
+    <div style="text-align: center; padding: 20px; color: #666; font-size: 12px;">
+        <p>&copy; 2024 CBC Marketplace. All rights reserved.</p>
+        <p>Need help? Contact us at support@cbcmarketplace.com</p>
+    </div>
+</body>
+</html>

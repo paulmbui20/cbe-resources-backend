@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - {{ site_name }}</title>
+    <style>
+        /* Reset styles */
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+        
+        /* Mobile styles */
+        @media only screen and (max-width: 600px) {
+            .mobile-padding { padding: 20px 10px !important; }
+            .mobile-center { text-align: center !important; }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f7;">
+        <tr>
+            <td align="center" style="padding: 40px 0;">
+                <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td align="center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px;">
+                            <div style="background: white; width: 80px; height: 80px; border-radius: 50%; display: inline-block; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                                <svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M3 8L10.89 13.26C11.2187 13.4793 11.6049 13.5963 12 13.5963C12.3951 13.5963 12.7813 13.4793 13.11 13.26L21 8M5 19H19C19.5304 19 20.0391 18.7893 20.4142 18.4142C20.7893 18.0391 21 17.5304 21 17V7C21 6.46957 20.7893 5.96086 20.4142 5.58579C20.0391 5.21071 19.5304 5 19 5H5C4.46957 5 3.96086 5.21071 3.58579 5.58579C3.21071 5.96086 3 6.46957 3 7V17C3 17.5304 3.21071 18.0391 3.58579 18.4142C3.96086 18.7893 4.46957 19 5 19Z" stroke="#667eea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <h1 style="color: white; margin: 20px 0 10px 0; font-size: 28px; font-weight: 600;">Verify Your Email Address</h1>
+                            <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 16px;">Welcome to {{ site_name }}!</p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Body -->
+                    <tr>
+                        <td class="mobile-padding" style="padding: 40px 30px;">
+                            <h2 style="color: #333333; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">
+                                Hi {{ user.get_display_name }},
+                            </h2>
+                            
+                            <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                                Thanks for signing up for {{ site_name }}! We're excited to have you on board. To get started, we need to verify your email address.
+                            </p>
+                            
+                            <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+                                Please click the button below to verify your email address:
+                            </p>
+                            
+                            <!-- CTA Button -->
+                            <div style="text-align: center; margin: 35px 0;">
+                                <a href="{{ verification_url }}" style="display: inline-block; padding: 14px 35px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">
+                                    Verify Email Address
+                                </a>
+                            </div>
+                            
+                            <!-- Security Notice -->
+                            <div style="background: #f8f9ff; border-left: 4px solid #667eea; padding: 15px 20px; margin: 30px 0; border-radius: 5px;">
+                                <p style="color: #4f46e5; font-weight: 600; margin: 0 0 10px 0; font-size: 14px;">
+                                    🔒 Security Information
+                                </p>
+                                <p style="color: #666666; margin: 0; font-size: 14px; line-height: 1.5;">
+                                    This verification link will expire in <strong>{{ expiry_hours }} hours</strong> for your security. If you didn't create an account with {{ site_name }}, you can safely ignore this email.
+                                </p>
+                            </div>
+                            
+                            <!-- Alternative Link -->
+                            <div style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #e5e7eb;">
+                                <p style="color: #999999; font-size: 14px; margin: 0 0 10px 0;">
+                                    Having trouble with the button? Copy and paste the URL below into your browser:
+                                </p>
+                                <p style="color: #667eea; font-size: 12px; word-break: break-all; margin: 0;">
+                                    {{ verification_url }}
+                                </p>
+                            </div>
+                            
+                            <!-- Benefits -->
+                            <div style="background: #fef3f2; padding: 20px; border-radius: 8px; margin-top: 30px;">
+                                <h3 style="color: #dc2626; margin: 0 0 15px 0; font-size: 18px; font-weight: 600;">
+                                    ✨ What happens after verification?
+                                </h3>
+                                <ul style="color: #666666; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
+                                    <li>Full access to all CBC educational materials</li>
+                                    <li>Ability to purchase and download resources</li>
+                                    <li>Save materials to your favorites</li>
+                                    <li>Apply to become a vendor</li>
+                                    <li>Receive important updates and notifications</li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                            <p style="color: #999999; margin: 0 0 10px 0; font-size: 14px;">
+                                Need help? Contact our support team
+                            </p>
+                            <p style="margin: 0 0 20px 0;">
+                                <a href="mailto:support@cbcmarketplace.com" style="color: #667eea; text-decoration: none; font-size: 14px; font-weight: 600;">
+                                    support@cbcmarketplace.com
+                                </a>
+                            </p>
+                            
+                            <!-- Social Links (optional) -->
+                            <div style="margin: 20px 0;">
+                                <a href="#" style="display: inline-block; margin: 0 5px;">
+                                    <img src="https://img.icons8.com/color/32/000000/facebook.png" alt="Facebook" width="32" height="32">
+                                </a>
+                                <a href="#" style="display: inline-block; margin: 0 5px;">
+                                    <img src="https://img.icons8.com/color/32/000000/twitter.png" alt="Twitter" width="32" height="32">
+                                </a>
+                                <a href="#" style="display: inline-block; margin: 0 5px;">
+                                    <img src="https://img.icons8.com/color/32/000000/instagram-new.png" alt="Instagram" width="32" height="32">
+                                </a>
+                            </div>
+                            
+                            <p style="color: #999999; margin: 15px 0 0 0; font-size: 12px;">
+                                © 2025 {{ site_name }}. All rights reserved.<br>
+                                <span style="font-size: 11px;">
+                                    This email was sent to {{ user.email }}
+                                </span>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
