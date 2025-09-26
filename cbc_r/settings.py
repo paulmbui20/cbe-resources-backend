@@ -79,7 +79,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # Third-party middlewares
     "axes.middleware.AxesMiddleware",
-    #custom middleware
+    # custom middleware
     'products.utils.APILoggingMiddleware',
 
 ]
@@ -89,7 +89,7 @@ ROOT_URLCONF = 'cbc_r.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR/ 'orders/templates', 'accounts/templates'],
+        'DIRS': [BASE_DIR / 'orders/templates', 'accounts/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -175,7 +175,6 @@ STATICFILES_FINDERS = (
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
 AUTH_USER_MODEL = "accounts.CustomUser"
 
 AUTHENTICATION_BACKENDS = [
@@ -217,16 +216,29 @@ CACHES = {
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
-CORS_ALLOWED_ORIGINS = os.getenv("ALLOWED_HOSTS").split(",")
+cors_hosts = os.getenv("CORS_HOSTS")
+CORS_ALLOWED_ORIGINS = (
+    [host.strip() for host in cors_hosts.split(",") if host.strip()]
+    if cors_hosts
+    else []
+)
+CORS_URLS_REGEX = r"^/api/.*$"
+CORS_ALLOW_METHODS = (
+    "DELETE",
+    "GET",
+    # "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+)
+CORS_ALLOW_CREDENTIALS = True
 
-csrf_origins = os.getenv("CSRF_ORIGINS", "")
+csrf_origins = os.getenv("CSRF_ORIGINS")
 CSRF_TRUSTED_ORIGINS = (
     [host.strip() for host in csrf_origins.split(",") if host.strip()]
     if csrf_origins
     else []
 )
-CORS_ALLOW_CREDENTIALS = True
-
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 

@@ -5,7 +5,7 @@ from .health import health_check
 from .views import (
     WebsiteInfoAPIView, ContactCreateAPIView, ContactViewSet,
     TermsOfServiceAPIView, PrivacyPolicyAPIView,
-    FAQListAPIView, FAQViewSet, contact_api, TestimonialViewSet
+    FAQListAPIView, FAQViewSet, TestimonialViewSet
 )
 
 # Create router for ViewSets
@@ -24,9 +24,6 @@ urlpatterns = [
     path('api/terms-of-service/', TermsOfServiceAPIView.as_view(), name='terms-api'),
     path('api/privacy-policy/', PrivacyPolicyAPIView.as_view(), name='privacy-api'),
     path('api/faqs/', FAQListAPIView.as_view(), name='faqs-list-api'),
-
-    # Alternative function-based contact endpoint
-    path('api/contact-alt/', contact_api, name='contact-alt-api'),
 
     # Admin/Management endpoints (require authentication)
     path('api/website/admin/', include(router.urls)),

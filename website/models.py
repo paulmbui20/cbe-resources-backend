@@ -30,6 +30,7 @@ class Contact(models.Model):
     priority_choices = [
         ('normal', 'normal'),
         ('urgent', 'urgent'),
+        ('critical', 'critical')
     ]
 
     full_name = models.CharField(max_length=65)

@@ -192,27 +192,6 @@ class FAQViewSet(viewsets.ModelViewSet):
         return response
 
 
-# Alternative function-based view for contact (if needed)
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def contact_api(request):
-    """
-    Function-based view for contact form submission
-    """
-    serializer = ContactCreateSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(
-            {"message": "Your message has been sent successfully."},
-            status=status.HTTP_201_CREATED
-        )
-    return Response(
-        {"errors": serializer.errors, "message": "Error in form data"},
-        status=status.HTTP_400_BAD_REQUEST
-    )
-
-
-
 class TestimonialViewSet(viewsets.ModelViewSet):
     queryset = Testimonials.objects.all().order_by("-date_added")[:5]
     serializer_class = TestimonialSerializer
