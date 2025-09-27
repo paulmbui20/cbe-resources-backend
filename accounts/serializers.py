@@ -3,6 +3,11 @@ from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from orders.models import Order, OrderItem
+from payments.models import Payment
 
 User = get_user_model()
 
@@ -98,27 +103,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class ChangePasswordSerializer(serializers.Serializer):
     """Serializer for password change"""
-    old_password = serializers.CharField(
-        required=True,
-        write_only=True,
-        style={'input_type': 'password'}
-    )
+    old_password = serializers.CharField(required=True, style={'input_type': 'password'})
     new_password = serializers.CharField(
         required=True,
-        write_only=True,
         style={'input_type': 'password'},
         validators=[validate_password]
     )
-    new_password_confirm = serializers.CharField(
-        required=True,
-        write_only=True,
-        style={'input_type': 'password'}
-    )
+    confirm_password = serializers.CharField(required=True, style={'input_type': 'password'})
 
     def validate(self, attrs):
-        """Validate passwords match"""
-        if attrs['new_password'] != attrs['new_password_confirm']:
-            raise serializers.ValidationError({"new_password": "New password fields didn't match."})
+        if attrs['new_password'] != attrs['confirm_password']:
+            raise serializers.ValidationError({"new_password": "Password fields didn't match."})
         return attrs
 
     def validate_old_password(self, value):
@@ -129,6 +124,264 @@ class ChangePasswordSerializer(serializers.Serializer):
         return value
 
 
+class UserDownloadSerializer(serializers.ModelSerializer):
+    """Serializer for user downloads"""
+    product_name = serializers.SerializerMethodField()
+    product_thumbnail = serializers.SerializerMethodField()
+    download_url = serializers.SerializerMethodField()
+    order_number = serializers.SerializerMethodField()
+    file_type = serializers.SerializerMethodField()
+    file_size = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrderItem
+        fields = (
+            'id', 'product_name', 'product_thumbnail', 'download_url',
+            'order_number', 'file_type', 'file_size', 'download_count',
+            'download_expires_at', 'created_at'
+        )
+
+    def get_product_name(self, obj):
+        """Get product name"""
+        return obj.product.name if obj.product else 'Unknown Product'
+
+    def get_product_thumbnail(self, obj):
+        """Get product thumbnail URL"""
+        if obj.product and obj.product.thumbnail:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.product.thumbnail.url)
+            return obj.product.thumbnail.url
+        return None
+
+    def get_download_url(self, obj):
+        """Get secure download URL"""
+        if obj.download_token:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(f'/api/downloads/{obj.download_token}/')
+        return None
+
+    def get_order_number(self, obj):
+        """Get order number"""
+        return obj.order.order_number if obj.order else None
+
+    def get_file_type(self, obj):
+        """Get file type"""
+        if obj.product and obj.product.file:
+            filename = obj.product.file.name
+            return filename.split('.')[-1].upper() if '.' in filename else 'Unknown'
+        return 'Unknown'
+
+    def get_file_size(self, obj):
+        """Get human-readable file size"""
+        if obj.product and obj.product.file and hasattr(obj.product.file, 'size'):
+            size_bytes = obj.product.file.size
+            # Convert to human-readable format
+            for unit in ['B', 'KB', 'MB', 'GB']:
+                if size_bytes < 1024.0 or unit == 'GB':
+                    break
+                size_bytes /= 1024.0
+            return f"{size_bytes:.2f} {unit}"
+        return 'Unknown'
+
+
+class UserPurchaseSerializer(serializers.ModelSerializer):
+    """Serializer for user purchases (products purchased)"""
+    product_name = serializers.SerializerMethodField()
+    product_thumbnail = serializers.SerializerMethodField()
+    product_type = serializers.SerializerMethodField()
+    purchase_date = serializers.SerializerMethodField()
+    order_number = serializers.SerializerMethodField()
+    price = serializers.SerializerMethodField()
+    download_available = serializers.SerializerMethodField()
+    download_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrderItem
+        fields = (
+            'id', 'product_name', 'product_thumbnail', 'product_type',
+            'purchase_date', 'order_number', 'price', 'download_available',
+            'download_url'
+        )
+
+    def get_product_name(self, obj):
+        """Get product name"""
+        return obj.product.name if obj.product else 'Unknown Product'
+
+    def get_product_thumbnail(self, obj):
+        """Get product thumbnail URL"""
+        if obj.product and obj.product.thumbnail:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.product.thumbnail.url)
+            return obj.product.thumbnail.url
+        return None
+
+    def get_product_type(self, obj):
+        """Get product type"""
+        return obj.product.get_product_type_display() if obj.product else 'Unknown'
+
+    def get_purchase_date(self, obj):
+        """Get purchase date"""
+        return obj.order.payment_date if obj.order and obj.order.payment_date else obj.created_at
+
+    def get_order_number(self, obj):
+        """Get order number"""
+        return obj.order.order_number if obj.order else None
+
+    def get_price(self, obj):
+        """Get price paid"""
+        return obj.price
+
+    def get_download_available(self, obj):
+        """Check if download is available"""
+        return bool(obj.download_token and obj.order and obj.order.status == 'paid')
+
+    def get_download_url(self, obj):
+        """Get secure download URL"""
+        if obj.download_token and obj.order and obj.order.status == 'paid':
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(f'/api/downloads/{obj.download_token}/')
+        return None
+
+
+class UserOrderSummarySerializer(serializers.ModelSerializer):
+    """Serializer for user order summary"""
+    item_count = serializers.SerializerMethodField()
+    payment_status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Order
+        fields = (
+            'id', 'order_number', 'created_at', 'status',
+            'total_amount', 'payment_method', 'item_count',
+            'payment_status'
+        )
+
+    def get_item_count(self, obj):
+        """Get number of items in order"""
+        return obj.items.count()
+
+    def get_payment_status(self, obj):
+        """Get payment status"""
+        if obj.status == 'paid':
+            return 'Completed'
+        elif obj.status == 'pending':
+            return 'Pending'
+        elif obj.status == 'processing':
+            return 'Processing'
+        elif obj.status == 'failed':
+            return 'Failed'
+        elif obj.status == 'cancelled':
+            return 'Cancelled'
+        elif obj.status == 'refunded':
+            return 'Refunded'
+        return obj.status.capitalize()
+
+
+class UserPaymentSerializer(serializers.ModelSerializer):
+    """Serializer for user payment history"""
+    order_number = serializers.SerializerMethodField()
+    payment_method_display = serializers.SerializerMethodField()
+    status_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Payment
+        fields = (
+            'id', 'order_number', 'created_at', 'processed_at',
+            'amount', 'currency', 'payment_method', 'payment_method_display',
+            'status', 'status_display', 'transaction_id'
+        )
+
+    def get_order_number(self, obj):
+        """Get order number"""
+        return obj.order.order_number if obj.order else None
+
+    def get_payment_method_display(self, obj):
+        """Get payment method display name"""
+        return obj.get_payment_method_display()
+
+    def get_status_display(self, obj):
+        """Get status display name"""
+        return obj.get_status_display()
+
+
+class UserDashboardSerializer(serializers.ModelSerializer):
+    """Serializer for user dashboard summary"""
+    total_orders = serializers.SerializerMethodField()
+    total_purchases = serializers.SerializerMethodField()
+    total_downloads = serializers.SerializerMethodField()
+    recent_orders = serializers.SerializerMethodField()
+    recent_downloads = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+    display_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            'id', 'email', 'username', 'full_name', 'display_name',
+            'total_orders', 'total_purchases', 'total_downloads',
+            'recent_orders', 'recent_downloads'
+        )
+
+    def get_full_name(self, obj):
+        """Get user's full name"""
+        return obj.get_full_name()
+
+    def get_display_name(self, obj):
+        """Get user's display name"""
+        return obj.get_display_name()
+
+    def get_total_orders(self, obj):
+        """Get total number of orders"""
+        return obj.orders.count()
+
+    def get_total_purchases(self, obj):
+        """Get total number of purchases (order items)"""
+        return OrderItem.objects.filter(order__user=obj).count()
+
+    def get_total_downloads(self, obj):
+        """Get total number of downloads"""
+        from django.db.models import Sum
+        result = OrderItem.objects.filter(
+            order__user=obj,
+            order__status='paid',
+            download_token__isnull=False
+        ).aggregate(total=Sum('download_count'))
+        return result['total'] or 0
+
+    def get_recent_orders(self, obj):
+        """Get recent orders"""
+        recent_orders = obj.orders.order_by('-created_at')[:5]
+        return UserOrderSummarySerializer(recent_orders, many=True, context=self.context).data
+
+    def get_recent_downloads(self, obj):
+        """Get recent downloads"""
+        recent_downloads = OrderItem.objects.filter(
+            order__user=obj,
+            order__status='paid',
+            download_token__isnull=False
+        ).order_by('-updated_at')[:5]
+        return UserDownloadSerializer(recent_downloads, many=True, context=self.context).data
+
+
 class EmailVerificationSerializer(serializers.Serializer):
     """Serializer for email verification"""
     token = serializers.CharField(required=True)
+
+
+class LogoutSerializer(serializers.Serializer):
+    """
+    Serializer for logout request validation
+    """
+    refresh_token = serializers.CharField(required=True)
+
+    def validate_refresh_token(self, value):
+        try:
+            # Validate that the token is a valid refresh token
+            RefreshToken(value)
+            return value
+        except TokenError:
+            raise serializers.ValidationError("Invalid or expired refresh token")

@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "phonenumber_field",
     'django_celery_beat',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'django_filters',
     'drf_spectacular',
     'drf_spectacular_sidecar',
@@ -222,7 +223,9 @@ CORS_ALLOWED_ORIGINS = (
     if cors_hosts
     else []
 )
-CORS_URLS_REGEX = r"^/api/.*$"
+
+CORS_URLS_REGEX = r"^/api/.*|^/accounts/.*"
+
 CORS_ALLOW_METHODS = (
     "DELETE",
     "GET",
@@ -316,9 +319,6 @@ X_FRAME_OPTIONS = 'DENY'
 
 SLOW_REQUEST_THRESHOLD = 4.0
 
-cors_hosts = os.getenv("CORS_HOSTS", "")
-CORS_ALLOWED_ORIGINS = [host.strip() for host in cors_hosts.split(",") if host.strip()]
-
 # Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -345,14 +345,13 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.MultiPartParser',
         'rest_framework.parsers.FormParser',
     ],
-    # 'EXCEPTION_HANDLER': 'your_app.utils.custom_exception_handler',
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle'
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/hour',
-        'user': '1000/hour'
+        'user': '300/hour'
     }
 }
 
@@ -377,10 +376,14 @@ from datetime import timedelta
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
     'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
 }
+
+# SIMPLE_JWT['AUTH_COOKIE_SECURE'] = True            # Use True in production (requires HTTPS)
+# SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'] = True         # Prevents JavaScript access
 
 # celery -A cbc_r worker -l INFO
 # celery -A cbc_r beat -l info

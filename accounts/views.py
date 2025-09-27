@@ -7,13 +7,14 @@ from rest_framework import status, generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import CustomUser
 from .serializers import (
     UserRegistrationSerializer,
     UserProfileSerializer,
-    ChangePasswordSerializer
+    ChangePasswordSerializer, LogoutSerializer
 )
 from .tasks import send_welcome_email, send_verification_email, send_verification_success_email
 
@@ -24,7 +25,7 @@ class UserRegistrationView(APIView):
     """
     API view for user registration with minimal required fields.
 
-    POST /api/accounts/register/
+    POST /accounts/api/register/
     {
         "email": "user@example.com",
         "username": "username",
@@ -84,8 +85,8 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     """
     API view for retrieving and updating user profile.
 
-    GET /api/accounts/profile/
-    PUT/PATCH /api/accounts/profile/
+    GET /accounts/api/profile/
+    PUT/PATCH /accounts/api/profile/
     """
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
@@ -117,7 +118,7 @@ class ChangePasswordView(APIView):
     """
     API view for changing user password.
 
-    POST /api/accounts/change-password/
+    POST /accounts/api/change-password/
     {
         "old_password": "OldPassword123!",
         "new_password": "NewPassword123!",
@@ -160,7 +161,7 @@ class CheckUsernameAvailabilityView(APIView):
     """
     API view to check if username is available.
 
-    GET /api/accounts/check-username/?username=desired_username
+    GET /accounts/api/check-username/?username=desired_username
     """
     permission_classes = [AllowAny]
 
@@ -191,7 +192,7 @@ class CheckEmailAvailabilityView(APIView):
     """
     API view to check if email is available.
 
-    GET /api/accounts/check-email/?email=user@example.com
+    GET /accounts/api/check-email/?email=user@example.com
     """
     permission_classes = [AllowAny]
 
@@ -215,7 +216,7 @@ class CheckEmailAvailabilityView(APIView):
 class SendVerificationEmailView(APIView):
     """
     Send verification email to the current user
-    POST /api/accounts/send-verification/
+    POST /accounts/api/send-verification/
     """
     permission_classes = [IsAuthenticated]
 
@@ -243,7 +244,7 @@ class SendVerificationEmailView(APIView):
 class VerifyEmailView(APIView):
     """
     Verify user's email with token from email link
-    GET /api/accounts/verify-email/<uidb64>/<token>/
+    GET /accounts/api/verify-email/<uidb64>/<token>/
     """
     permission_classes = [AllowAny]
 
@@ -293,7 +294,7 @@ class VerifyEmailView(APIView):
 class ResendVerificationEmailView(APIView):
     """
     Resend verification email with rate limiting
-    POST /api/accounts/resend-verification/
+    POST /accounts/api/resend-verification/
     """
     permission_classes = [IsAuthenticated]
 
@@ -327,7 +328,6 @@ class ResendVerificationEmailView(APIView):
         # Send email
         send_verification_email.delay(user.id, token, uid)
 
-
         # Update rate limiting
         request.session[session_key] = datetime.now().isoformat()
 
@@ -340,7 +340,7 @@ class ResendVerificationEmailView(APIView):
 class CheckVerificationStatusView(APIView):
     """
     Check if current user's email is verified
-    GET /api/accounts/verification-status/
+    GET /accounts/api/verification-status/
     """
     permission_classes = [IsAuthenticated]
 
@@ -352,3 +352,66 @@ class CheckVerificationStatusView(APIView):
             'message': 'Email is verified' if user.is_verified else 'Email is not verified'
         }, status=status.HTTP_200_OK)
 
+
+class LogoutWithSerializerView(APIView):
+    """
+    Logout view using serializer for validation
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = LogoutSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+
+        if serializer.is_valid():
+            try:
+                refresh_token = serializer.validated_data['refresh_token']
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+
+                return Response(
+                    {"message": "Successfully logged out"},
+                    status=status.HTTP_200_OK
+                )
+
+            except TokenError:
+                return Response(
+                    {"error": "Invalid or expired token"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class LogoutAllView(APIView):
+    """
+    Logout from all devices by blacklisting all tokens for the user
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            # Get all outstanding tokens for the user and blacklist them
+            from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+
+            tokens = OutstandingToken.objects.filter(user=request.user)
+            for token in tokens:
+                try:
+                    RefreshToken(token.token).blacklist()
+                except TokenError:
+                    # Token might already be blacklisted or expired
+                    pass
+
+            return Response(
+                {"message": "Successfully logged out from all devices"},
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            return Response(
+                {"error": "An error occurred during logout"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

@@ -5,6 +5,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
 
+from core.models import TimestampedModel, UUIDModel
+
 
 class CustomUser(AbstractUser):
     phone_number = PhoneNumberField(null=True, blank=True)
@@ -15,7 +17,7 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username',]
+    REQUIRED_FIELDS = ['username', ]
 
     # Notification preferences
     email_notifications = models.BooleanField(default=True)
@@ -50,3 +52,39 @@ class CustomUser(AbstractUser):
                     output_size = (300, 300)
                     img.thumbnail(output_size, Image.Resampling.LANCZOS)
                     img.save(self.avatar.path, quality=85, optimize=True)
+
+
+class DownloadLog(UUIDModel, TimestampedModel):
+    """Track user download activity"""
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='download_logs')
+    from orders.models import OrderItem
+    order_item = models.ForeignKey(OrderItem, on_delete=models.CASCADE, related_name='download_logs')
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.TextField()
+    device_type = models.CharField(max_length=20, blank=True)
+    os_type = models.CharField(max_length=20, blank=True)
+    browser_type = models.CharField(max_length=20, blank=True)
+    download_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('success', 'Success'),
+            ('failed', 'Failed'),
+            ('expired', 'Link Expired'),
+            ('invalid', 'Invalid Token')
+        ],
+        default='success'
+    )
+    error_message = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'created_at']),
+            models.Index(fields=['order_item', 'created_at']),
+            models.Index(fields=['download_status']),
+        ]
+        verbose_name = 'Download Log'
+        verbose_name_plural = 'Download Logs'
+
+    def __str__(self):
+        return f"{self.user.email} - {self.order_item} - {self.created_at}"

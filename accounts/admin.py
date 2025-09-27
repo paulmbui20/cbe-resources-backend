@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
-from .models import CustomUser
+from .models import CustomUser, DownloadLog
 
 
 @admin.register(CustomUser)
@@ -29,6 +29,11 @@ class UserAdmin(BaseUserAdmin):
         return "No Image"
 
     avatar_preview.short_description = "Avatar"
+
+@admin.register(DownloadLog)
+class DownloadLogAdmin(admin.ModelAdmin):
+    pass
+
 
 
 

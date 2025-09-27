@@ -2,6 +2,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
 from accounts import views
+from accounts import views_dashboard
 
 urlpatterns = [
 
@@ -26,5 +27,17 @@ urlpatterns = [
     path('api/verify-email/<str:uidb64>/<str:token>/', views.VerifyEmailView.as_view(), name='verify_email'),
     path('api/resend-verification/', views.ResendVerificationEmailView.as_view(), name='resend_verification'),
     path('api/verification-status/', views.CheckVerificationStatusView.as_view(), name='verification_status'),
+
+    # User Dashboard endpoints
+    path('api/dashboard/', views_dashboard.UserDashboardView.as_view(), name='user_dashboard'),
+    path('api/downloads/', views_dashboard.UserDownloadsView.as_view(), name='user_downloads'),
+    path('api/purchases/', views_dashboard.UserPurchasesView.as_view(), name='user_purchases'),
+    path('api/orders/', views_dashboard.UserOrdersView.as_view(), name='user_orders'),
+    path('api/payments/', views_dashboard.UserPaymentsView.as_view(), name='user_payments'),
+    path('api/stats/', views_dashboard.user_stats, name='user_stats'),
+    path('api/download-history/', views_dashboard.download_history, name='download_history'),
+
+    path('api/logout/', views.LogoutWithSerializerView.as_view(), name='logout_validated'),
+    path('auth/logout-all/', views.LogoutAllView.as_view(), name='logout_all'),
 
 ]
