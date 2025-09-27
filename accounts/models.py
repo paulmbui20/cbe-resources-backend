@@ -60,21 +60,46 @@ class DownloadLog(UUIDModel, TimestampedModel):
     from orders.models import OrderItem
     order_item = models.ForeignKey(OrderItem, on_delete=models.CASCADE, related_name='download_logs')
     ip_address = models.GenericIPAddressField()
-    user_agent = models.TextField()
-    device_type = models.CharField(max_length=20, blank=True)
-    os_type = models.CharField(max_length=20, blank=True)
-    browser_type = models.CharField(max_length=20, blank=True)
+
+    user_agent = models.TextField()# Browser info
+    browser_family = models.CharField(max_length=100, default='Other')
+    browser_version = models.CharField(max_length=50, default='Unknown')
+
+    # OS info
+    os_family = models.CharField(max_length=100, default='Other')
+    os_version = models.CharField(max_length=50, default='Unknown')
+
+    # Device info
+    device_family = models.CharField(max_length=100, default='Other')
+    device_brand = models.CharField(max_length=100, default='Unknown')
+    device_model = models.CharField(max_length=100, default='Unknown')
+
+    # Capabilities
+    is_mobile = models.BooleanField(default=False)
+    is_tablet = models.BooleanField(default=False)
+    is_bot = models.BooleanField(default=False)
+
+    # Security
+    is_suspicious = models.BooleanField(default=False)
+
+    # Download details
+    file_size = models.BigIntegerField(null=True, blank=True)
+    download_duration = models.FloatField(null=True, blank=True)
+    error_message = models.TextField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
     download_status = models.CharField(
         max_length=20,
         choices=[
             ('success', 'Success'),
             ('failed', 'Failed'),
             ('expired', 'Link Expired'),
-            ('invalid', 'Invalid Token')
+            ('invalid', 'Invalid Token'),
+            ('limit_exceeded', 'Download Limit Exceeded')
         ],
         default='success'
     )
-    error_message = models.TextField(blank=True)
 
     class Meta:
         ordering = ['-created_at']

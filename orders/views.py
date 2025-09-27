@@ -1,10 +1,7 @@
 import logging
-import mimetypes
-import os
 from typing import Any
 
 from django.db import transaction
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, status
@@ -435,75 +432,6 @@ def cancel_order(request, order_id):
             {'error': 'Failed to cancel order'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def download_file(request, token):
-    """
-    Secure file download
-    GET /api/downloads/{token}
-    """
-    try:
-        # Find the order item with this token
-        order_item = get_object_or_404(
-            OrderItem,
-            download_token=token,
-            order__user=request.user,
-            order__status='paid'
-        )
-
-        # Check if download is still valid
-        if not order_item.can_download():
-            return Response(
-                {'error': 'Download link has expired or exceeded limit'},
-                status=status.HTTP_410_GONE
-            )
-
-        # Get the file
-        file_path = order_item.product.main_file.path
-
-        if not os.path.exists(file_path):
-            return Response(
-                {'error': 'File not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        # Increment download count
-        order_item.increment_download()
-
-        # Determine content type
-        content_type, _ = mimetypes.guess_type(file_path)
-        if content_type is None:
-            content_type = 'application/octet-stream'
-
-        # Create response
-        with open(file_path, 'rb') as file:
-            response = HttpResponse(file.read(), content_type=content_type)
-            response['Content-Disposition'] = (
-                f'attachment; filename="{order_item.product.title}'
-                f'.{file_path.split(".")[-1]}"'
-            )
-            response['Content-Length'] = os.path.getsize(file_path)
-
-            # Security headers
-            response['X-Content-Type-Options'] = 'nosniff'
-            response['X-Frame-Options'] = 'DENY'
-
-            return response
-
-    except OrderItem.DoesNotExist:
-        return Response(
-            {'error': 'Invalid download link'},
-            status=status.HTTP_404_NOT_FOUND
-        )
-    except Exception as e:
-        logger.error(f"Error downloading file with token {token}: {e}")
-        return Response(
-            {'error': 'Download failed'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
 
 # Cart API Views
 class CartAPIView(generics.RetrieveAPIView):

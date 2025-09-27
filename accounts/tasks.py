@@ -45,7 +45,7 @@ def send_credentials_email(user_id, password):
             'user': user,
             'password': password,
             'site_name': settings.SITE_NAME,
-            'login_url': f"{settings.SITE_URL}/accounts/login/"
+            'login_url': f"{settings.SITE_URL}/login/"
         })
         plain_message = strip_tags(html_message)
 
@@ -74,7 +74,7 @@ def send_verification_email(user_id, token, uid):
         user = CustomUser.objects.get(id=user_id)
 
         # Build verification URL
-        verification_url = f"{settings.SITE_URL}/api/accounts/verify-email/{uid}/{token}/"
+        verification_url = f"{settings.SITE_URL}/accounts/api/verify-email/{uid}/{token}/"
 
         subject = f'Verify Your Email  - {settings.SITE_NAME}'
 
@@ -113,7 +113,7 @@ def send_verification_success_email(user_id):
         html_message = render_to_string('emails/verification_success.html', {
             'user': user,
             'site_name': settings.SITE_NAME,
-            'login_url': f"{settings.SITE_URL}/accounts/login/",
+            'login_url': f"{settings.SITE_URL}/login/",
         })
         plain_message = strip_tags(html_message)
 

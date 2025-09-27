@@ -1,7 +1,7 @@
 from django.urls import path
 
 from payments.views import order_invoice, request_refund
-from . import views
+from . import views, utils
 
 app_name = 'orders'
 
@@ -18,7 +18,7 @@ urlpatterns = [
     path('orders/<uuid:order_id>/refund/', request_refund, name='request-refund'),
 
     # Download endpoints
-    path('downloads/<str:token>/', views.download_file, name='download-file'),
+    path('downloads/<str:token>/', utils.download_file, name='download-file'),
 
     # Cart endpoints
     path('cart/', views.CartAPIView.as_view(), name='cart'),
