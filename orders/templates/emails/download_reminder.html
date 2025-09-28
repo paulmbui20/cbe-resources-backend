@@ -1,0 +1,53 @@
+<!-- templates/emails/download_reminder.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Reminder - {{ order_item.product.title }}</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: #3b82f6; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">Download Reminder</h1>
+        <p style="color: white; margin: 10px 0 0 0;">Your download link will expire soon!</p>
+    </div>
+
+    <div style="background: white; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
+        <h2 style="color: #333; margin-top: 0;">Hello {{ order.user.get_display_name }}!</h2>
+
+        <p>This is a friendly reminder that your download link for <strong>{{ order_item.product.title }}</strong> will expire in <strong>{{ days_left }} day{% if days_left != 1 %}s{% endif %}</strong>.</p>
+
+        <!-- Download Information -->
+        <div style="background: #f0f9ff; border: 1px solid #3b82f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #1e40af; margin-top: 0;">Download Details</h3>
+            <p><strong>Product:</strong> {{ order_item.product.title }}</p>
+            <p><strong>Order Number:</strong> {{ order.order_number }}</p>
+            <p><strong>Expires On:</strong> {{ order_item.download_expires_at|date:"F d, Y" }}</p>
+            <p><strong>Downloads Remaining:</strong> {{ order_item.download_limit|subtract:order_item.download_count }}</p>
+
+            <div style="text-align: center; margin: 20px 0 10px 0;">
+                <a href="{{ site_url }}{% url 'orders:download' token=order_item.download_token %}" style="background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Download Now</a>
+            </div>
+        </div>
+
+        <!-- Urgent Notice -->
+        <div style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 15px 20px; margin: 30px 0; border-radius: 5px;">
+            <p style="color: #b91c1c; font-weight: 600; margin: 0 0 10px 0; font-size: 14px;">
+                ⚠️ Important
+            </p>
+            <p style="color: #7f1d1d; margin: 0; font-size: 14px;">
+                After the expiration date, you will no longer be able to download this file. Please download and save it to your device as soon as possible.
+            </p>
+        </div>
+
+        <p>If you have any questions or need assistance, please contact our support team.</p>
+
+        <p style="margin-bottom: 0;">Best regards,<br>The {{ site_name }} Team</p>
+    </div>
+
+    <div style="text-align: center; padding: 20px; color: #666; font-size: 12px;">
+        <p>&copy; 2024 {{ site_name }}. All rights reserved.</p>
+        <p>This email was sent to {{ order.user.email }}. If you didn't purchase this product, please ignore this email.</p>
+    </div>
+</body>
+</html>
