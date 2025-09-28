@@ -81,7 +81,7 @@ MIDDLEWARE = [
     # Third-party middlewares
     "axes.middleware.AxesMiddleware",
     # custom middleware
-    'products.utils.APILoggingMiddleware',
+    # 'products.utils.APILoggingMiddleware',
 
 ]
 
@@ -328,6 +328,7 @@ SLOW_REQUEST_THRESHOLD = 4.0
 # Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'accounts.authentication.CookieJWTAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.TokenAuthentication',
@@ -356,8 +357,8 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle'
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/hour',
-        'user': '300/hour'
+        'anon': '60/hour',
+        'user': '100/hour'
     }
 }
 

@@ -54,6 +54,6 @@ urlpatterns = [
     path('api/download-history/', views_dashboard.download_history, name='download_history'),
 
     path('api/logout/', views.LogoutWithSerializerView.as_view(), name='logout_validated'),
-    path('auth/logout-all/', views.LogoutAllView.as_view(), name='logout_all'),
+    path('api/logout-all/', views.LogoutAllView.as_view(), name='logout_all'),
 
 ]

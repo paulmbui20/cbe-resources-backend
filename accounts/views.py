@@ -1,3 +1,5 @@
+import re
+
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.db import transaction
@@ -177,7 +179,7 @@ class CheckUsernameAvailabilityView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        username = request.query_params.get('username', '')
+        username = request.query_params.get('username', '').strip()
 
         if not username:
             return Response({
@@ -185,18 +187,32 @@ class CheckUsernameAvailabilityView(APIView):
                 'message': 'Username is required'
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        # Early validation - don't hit DB if username is too short
         if len(username) < 3:
             return Response({
                 'available': False,
                 'message': 'Username must be at least 3 characters long'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        available = not User.objects.filter(username=username).exists()
+        # Additional validation - check for valid username format
+        if not re.match(r'^[a-zA-Z0-9_.-]+$', username):
+            return Response({
+                'available': False,
+                'message': 'Username can only contain letters, numbers, dots, hyphens, and underscores'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({
-            'available': available,
-            'message': 'Username is available' if available else 'Username is already taken'
-        })
+        # Only query database after validation passes
+        try:
+            available = not User.objects.filter(username__iexact=username).exists()
+            return Response({
+                'available': available,
+                'message': 'Username is available' if available else 'Username is already taken'
+            })
+        except Exception as e:
+            return Response({
+                'available': False,
+                'message': 'Error checking username availability'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class CheckEmailAvailabilityView(APIView):
@@ -208,7 +224,7 @@ class CheckEmailAvailabilityView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        email = request.query_params.get('email', '').lower()
+        email = request.query_params.get('email', '').strip().lower()
 
         if not email:
             return Response({
@@ -216,12 +232,33 @@ class CheckEmailAvailabilityView(APIView):
                 'message': 'Email is required'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        available = not User.objects.filter(email=email).exists()
+        # Early validation - don't hit DB if email format is invalid
+        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_regex, email):
+            return Response({
+                'available': False,
+                'message': 'Please enter a valid email address'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({
-            'available': available,
-            'message': 'Email is available' if available else 'Email is already registered'
-        })
+        # Additional length check to prevent extremely long emails
+        if len(email) > 254:  # RFC 5321 limit
+            return Response({
+                'available': False,
+                'message': 'Email address is too long'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Only query database after validation passes
+        try:
+            available = not User.objects.filter(email__iexact=email).exists()
+            return Response({
+                'available': available,
+                'message': 'Email is available' if available else 'Email is already registered'
+            })
+        except Exception as e:
+            return Response({
+                'available': False,
+                'message': 'Error checking email availability'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class SendVerificationEmailView(APIView):

@@ -67,7 +67,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializer for user profile (read and update)"""
-    phone_number = PhoneNumberField(required=False, allow_blank=True)
+    phone_number = PhoneNumberField(
+        required=False,
+        allow_blank=True,
+        allow_null=True
+    )
     avatar_url = serializers.SerializerMethodField()
     full_name = serializers.SerializerMethodField()
     display_name = serializers.SerializerMethodField()
@@ -81,10 +85,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'sms_notifications', 'full_name', 'display_name',
             'date_joined'
         )
-        read_only_fields = ('id', 'email', 'username', 'is_vendor', 'is_verified', 'date_joined')
+        read_only_fields = (
+            'id', 'email', 'username', 'is_vendor', 'is_verified', 'date_joined'
+        )
 
     def get_avatar_url(self, obj):
-        """Get full avatar URL"""
         if obj.avatar:
             request = self.context.get('request')
             if request:
@@ -93,12 +98,21 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return None
 
     def get_full_name(self, obj):
-        """Get user's full name"""
         return obj.get_full_name()
 
     def get_display_name(self, obj):
-        """Get user's display name"""
         return obj.get_display_name()
+
+    def validate_phone_number(self, value):
+        """Normalize empty string to None"""
+        return value or None
+
+    def to_representation(self, instance):
+        """Ensure phone_number returns null instead of empty string"""
+        rep = super().to_representation(instance)
+        if rep.get("phone_number") == "":
+            rep["phone_number"] = None
+        return rep
 
 
 class ChangePasswordSerializer(serializers.Serializer):

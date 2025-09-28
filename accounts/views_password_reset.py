@@ -62,7 +62,7 @@ class PasswordResetRequestView(APIView):
                     logger.debug(f"OTP for {email}: {otp_obj.otp}")
                 
                 # Send OTP via email
-                from accounts.tasks_password_reset import send_password_reset_otp
+                from accounts.tasks import send_password_reset_otp
                 send_password_reset_otp.delay(user.id, otp_obj.otp)
                 
             except User.DoesNotExist:

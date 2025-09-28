@@ -134,4 +134,77 @@ def send_verification_success_email(user_id):
         return f"Error sending verification success email: {str(e)}"
 
 
+import logging
+
+from celery import shared_task
+from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+
+logger = logging.getLogger(__name__)
+
+
+@shared_task
+def send_password_reset_otp(user_id, otp):
+    """
+    Send password reset OTP to user's email
+    """
+    from accounts.models import CustomUser
+    from django.template.loader import render_to_string
+    from django.utils.html import strip_tags
+    from django.core.mail import EmailMultiAlternatives
+    from django.conf import settings
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        user = CustomUser.objects.get(id=user_id)
+
+        # Prepare email content
+        context = {
+            'user': user,
+            'otp': otp,
+            'site_name': settings.SITE_NAME,
+            'site_url': settings.SITE_URL,
+            'expiry_minutes': 30,  # OTP expires in 30 minutes
+        }
+
+        # Render email templates
+        html_content = render_to_string('emails/password_reset.html', context)
+        text_content = render_to_string('emails/password_reset_otp.txt', context)
+
+        # Create email
+        subject = f"Password Reset Code for {settings.SITE_NAME}"
+        from_email = settings.DEFAULT_FROM_EMAIL
+        to_email = user.email
+
+        # Send email with both HTML and plain text versions
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_content,  # Plain text version as body
+            from_email=from_email,
+            to=[to_email]
+        )
+        email.attach_alternative(html_content, "text/html")
+
+        # Optional: Set email priority to high for security-related emails
+        email.extra_headers = {
+            'X-Priority': '2',
+            'X-MSMail-Priority': 'High',
+            'Importance': 'high'
+        }
+
+        email.send()
+
+        logger.info(f"Password reset OTP sent to {user.email} (ID: {user.id})")
+        return True
+
+    except CustomUser.DoesNotExist:
+        logger.error(f"Failed to send password reset OTP: User with ID {user_id} not found")
+        return False
+    except Exception as e:
+        logger.error(f"Failed to send password reset OTP to user {user_id}: {str(e)}")
+        return False
 
