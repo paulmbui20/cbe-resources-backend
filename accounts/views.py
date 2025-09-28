@@ -20,6 +20,17 @@ from .tasks import send_welcome_email, send_verification_email, send_verificatio
 
 User = CustomUser
 
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.http import JsonResponse
+
+
+@ensure_csrf_cookie
+def csrf_token_view(request):
+    """
+    API view for
+    """
+    return JsonResponse({'detail': 'CSRF cookie set'})
+
 
 class UserRegistrationView(APIView):
     """

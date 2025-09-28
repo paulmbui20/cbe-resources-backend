@@ -1,14 +1,30 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
+from rest_framework_simplejwt.views import TokenVerifyView
 
 from accounts import views
 from accounts import views_dashboard
+from accounts.views_password_reset import (
+    PasswordResetRequestView,
+    PasswordResetVerifyOTPView,
+    PasswordResetConfirmView,
+    CookieTokenObtainPairView,
+    CookieTokenRefreshView,
+    CookieTokenLogoutView
+)
 
 urlpatterns = [
+    path('api/csrf/', views.csrf_token_view, name='csrf'),
 
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    # JWT Token endpoints with HTTP-only cookie support
+    path('api/token/', CookieTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', CookieTokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('api/token/logout/', CookieTokenLogoutView.as_view(), name='token_logout'),
+
+    # Password Reset endpoints
+    path('api/password-reset/request/', PasswordResetRequestView.as_view(), name='password_reset_request'),
+    path('api/password-reset/verify-otp/', PasswordResetVerifyOTPView.as_view(), name='password_reset_verify_otp'),
+    path('api/password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
 
     # Registration and Profile
     path('api/register/', views.UserRegistrationView.as_view(), name='register'),

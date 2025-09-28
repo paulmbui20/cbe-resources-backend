@@ -1,8 +1,11 @@
 import os
+import random
+from datetime import timedelta
 
 from PIL import Image
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 from phonenumber_field.modelfields import PhoneNumberField
 
 from core.models import TimestampedModel, UUIDModel
@@ -52,6 +55,54 @@ class CustomUser(AbstractUser):
                     output_size = (300, 300)
                     img.thumbnail(output_size, Image.Resampling.LANCZOS)
                     img.save(self.avatar.path, quality=85, optimize=True)
+
+
+class PasswordResetOTP(UUIDModel, TimestampedModel):
+    """Store OTP codes for password reset"""
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='password_reset_otps')
+    otp = models.CharField(max_length=6)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Password Reset OTP'
+        verbose_name_plural = 'Password Reset OTPs'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"OTP for {self.user.email}"
+
+    @classmethod
+    def generate_otp(cls, user, ip_address=None, user_agent=None):
+        """Generate a new OTP for password reset"""
+        # Invalidate any existing OTPs for this user
+        cls.objects.filter(user=user, is_used=False).update(is_used=True)
+
+        # Generate a new 6-digit OTP
+        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+        
+        # Set expiration time (30 minutes from now)
+        expires_at = timezone.now() + timedelta(minutes=30)
+        
+        # Create and return the new OTP object
+        return cls.objects.create(
+            user=user,
+            otp=otp,
+            expires_at=expires_at,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+
+    def is_valid(self):
+        """Check if OTP is valid (not used and not expired)"""
+        return not self.is_used and timezone.now() < self.expires_at
+
+    def use(self):
+        """Mark OTP as used"""
+        self.is_used = True
+        self.save()
 
 
 class DownloadLog(UUIDModel, TimestampedModel):

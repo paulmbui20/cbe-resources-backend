@@ -243,6 +243,12 @@ CSRF_TRUSTED_ORIGINS = (
     else []
 )
 
+CSRF_COOKIE_NAME = "csrftoken"
+CSRF_COOKIE_SECURE = True   if not DEBUG else False    # Only over HTTPS in production
+CSRF_COOKIE_SAMESITE = "Lax"     # Prevents CSRF via some cross-site contexts
+CSRF_COOKIE_HTTPONLY = False     # Must be False so frontend JS can read it
+
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 EMAIL_HOST = os.getenv('EMAIL_HOST')

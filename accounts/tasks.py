@@ -11,7 +11,7 @@ def send_welcome_email(user_id):
     try:
         user = CustomUser.objects.get(id=user_id)
 
-        subject = 'Welcome to CBC Marketplace!'
+        subject = f'Welcome to {settings.SITE_NAME}!'
         html_message = render_to_string('emails/welcome.html', {
             'user': user,
             'site_name': settings.SITE_NAME,
