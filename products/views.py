@@ -134,14 +134,19 @@ class ProductListAPIView(generics.ListAPIView):
             serializer = self.get_serializer(page, many=True)
             paginated_response = self.get_paginated_response(serializer.data)
 
-            # Transform to match frontend expectations
+            page_size = len(serializer.data)
+            total = paginated_response.data['count']
+
+            total_pages = 0
+            if page_size > 0:
+                total_pages = (total // page_size) + (1 if total % page_size else 0)
+
             return Response({
                 'items': serializer.data,
-                'total': paginated_response.data['count'],
+                'total': total,
                 'page': int(request.query_params.get('page', 1)),
-                'pageSize': len(serializer.data),
-                'totalPages': paginated_response.data['count'] // len(serializer.data) + (
-                    1 if paginated_response.data['count'] % len(serializer.data) else 0)
+                'pageSize': page_size,
+                'totalPages': total_pages,
             })
 
         serializer = self.get_serializer(queryset, many=True)

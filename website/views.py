@@ -1,9 +1,7 @@
-# views.py
 from django.core.cache import cache
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from rest_framework import generics, status, viewsets
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -195,9 +193,3 @@ class FAQViewSet(viewsets.ModelViewSet):
 class TestimonialViewSet(viewsets.ModelViewSet):
     queryset = Testimonials.objects.all().order_by("-date_added")[:5]
     serializer_class = TestimonialSerializer
-
-    # Optional: search and filter
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["full_name", "role", "school_name", "school_location", "message"]
-    ordering_fields = ["date_added", "rating"]
-    ordering = ["-date_added"]
